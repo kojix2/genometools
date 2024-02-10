@@ -1,4 +1,4 @@
-name: ci.yaml
+name: Build and test
 
 on:
   - push
@@ -21,9 +21,9 @@ jobs:
           - debian:testing
           - ubuntu:latest
         options:
-          - assert=no
-          - opt=no cairo=no
-          - amalgamation=yes
+          - assert=no errorcheck=yes
+          - opt=no cairo=no errorcheck=yes
+          - amalgamation=yes errorcheck=yes
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.container }}
@@ -50,12 +50,11 @@ jobs:
     strategy:
       matrix:
         options:
-          - assert=no
-          - opt=no cairo=no
-          - amalgamation=yes
+          - assert=no errorcheck=yes
+          - opt=no cairo=no errorcheck=yes
+          - amalgamation=yes errorcheck=yes
     runs-on: macos-latest
     env:
-      PKG_CONFIG_PATH: /usr/local/opt/libffi/lib/pkgconfig
       BUILDOPTS: $${{ matrix.options }}
     steps:
       - name: Check out repository code
@@ -70,20 +69,21 @@ jobs:
         run: |
              scripts/citest.rb
   windows-cross:
-    name: mingw-w64 (fpic=no cairo=no sharedlib=no, ${{ matrix.mingw-arch }})
+    name: mingw-w64 (fpic=no cairo=no sharedlib=no errorcheck=yes, ${{ matrix.mingw-arch }})
     strategy:
       matrix:
         mingw-arch:
-          - i686
-          - x86_64
+          - machine: i686
+            buildopts: fpic=no cairo=no sharedlib=no 64bit=no errorcheck=yes
+          - machine: x86_64
+            buildopts: fpic=no cairo=no sharedlib=no errorcheck=yes
     env:
       DEBIAN_FRONTEND: noninteractive
-      CC: ${{ matrix.mingw-arch }}-w64-mingw32-gcc
+      CC: ${{ matrix.mingw-arch.machine }}-w64-mingw32-gcc
       SYSTEM: Windows
-      MACHINE: ${{ matrix.mingw-arch }}
-      AR: ${{ matrix.mingw-arch }}-w64-mingw32-ar
+      MACHINE: ${{ matrix.mingw-arch.machine }}
+      AR: ${{ matrix.mingw-arch.machine }}-w64-mingw32-ar
       CFLAGS: -Wno-error=attributes -Wno-error=unused-parameter -DSQLITE_MALLOCSIZE=_msize
-      BUILDOPTS: fpic=no cairo=no sharedlib=no
     runs-on: ubuntu-latest
     container: debian:buster
     steps:
@@ -97,4 +97,4 @@ jobs:
                      binutils-mingw-w64-x86-64 gcc-mingw-w64-x86-64
       - name: Build
         run: |
-             make fpic=no cairo=no sharedlib=no
+             make ${{ matrix.mingw-arch.buildopts }}

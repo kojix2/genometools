@@ -18,14 +18,15 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
+from gt.bytes import gtbytes
 from gt.dlload import gtlib
 from gt.core.error import gterror
 from gt.core.str_array import StrArray
 from gt.extended.genome_stream import GenomeStream
+from gt.extended.type_checker import TypeChecker
 
 
 class GFF3InStream(GenomeStream):
-
     def __init__(self, filename):
         try:
             p = open(filename)
@@ -33,8 +34,7 @@ class GFF3InStream(GenomeStream):
             p.close()
         except:
             gterror("File " + filename + " not readable!")
-        filename = filename.encode('UTF-8')
-        self.gs = gtlib.gt_gff3_in_stream_new_sorted(filename)
+        self.gs = gtlib.gt_gff3_in_stream_new_sorted(gtbytes(filename))
         self._as_parameter_ = self.gs
 
     def from_param(cls, obj):
@@ -49,11 +49,31 @@ class GFF3InStream(GenomeStream):
         used_types = StrArray(str_array_ptr)
         return used_types.to_list()
 
+    def check_id_attributes(self):
+        gtlib.gt_gff3_in_stream_check_id_attributes(self.gs)
+
+    def enable_tidy_mode(self):
+        gtlib.gt_gff3_in_stream_enable_tidy_mode(self.gs)
+
+    def enable_strict_mode(self):
+        gtlib.gt_gff3_in_stream_enable_strict_mode(self.gs)
+
+    def set_type_checker(self, tc):
+        if not isinstance(tc, TypeChecker):
+            raise TypeError("argument must be a TypeChecker")
+        gtlib.gt_gff3_in_stream_set_type_checker(self.gs, tc._as_parameter_)
+
     def register(cls, gtlib):
         from ctypes import c_char_p, c_void_p
+
         gtlib.gt_gff3_in_stream_get_used_types.argtypes = [c_void_p]
         gtlib.gt_gff3_in_stream_new_sorted.argtypes = [c_char_p]
         gtlib.gt_gff3_in_stream_get_used_types.restype = c_void_p
         gtlib.gt_gff3_in_stream_new_sorted.restype = c_void_p
+        gtlib.gt_gff3_in_stream_check_id_attributes.argtypes = [c_void_p]
+        gtlib.gt_gff3_in_stream_enable_tidy_mode.argtypes = [c_void_p]
+        gtlib.gt_gff3_in_stream_enable_strict_mode.argtypes = [c_void_p]
+        gtlib.gt_gff3_in_stream_set_type_checker.argtypes = [
+            c_void_p, c_void_p]
 
     register = classmethod(register)

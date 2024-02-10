@@ -1,4 +1,21 @@
-changes in version 1.6.3 (2022-05-09)
+changes in version 1.6.5 (2023-10-23)
+
+- add Python bindings for the `TypeChecker*` classes
+- add Python bindings for `gt_gff3_in_stream_enable_tidy_mode()`,
+  `gt_gff3_in_stream_check_id_attributes()` and
+  `gt_gff3_in_stream_enable_strict_mode()`
+
+
+changes in version 1.6.4 (2023-10-08)
+
+- build compatibility improvements (e.g. newer clang, GCC 13.2)
+- upgrade bundled zlib to v1.3.0.1
+- remove text README
+- adjust release documentation to new process
+- avoid use of deprecated `File.exists?()` in Ruby
+
+
+changes in version 1.6.3 (2023-09-19)
 
 - bugfixes
   - `gt gff3 --sortlines`: address issues with pseudo-features and
@@ -6,7 +23,12 @@ changes in version 1.6.3 (2022-05-09)
   - deduplicate pseudo node roots
   - ensure validity checks are done for orphan (out of order) nodes
   - fix failing assertion in `repeat_region`s without `LTR_retrotransposon`s
+  - fix quicksort segfault caused by integer overflows
+  - support BED files with zero length blocks
+- make `errorcheck` optional, no longer active by default
+- unify Python byte/string handling
 - various fixes to support newer compilers
+- update website structure to reflect new GitHub-based release process
 
 
 changes in version 1.6.2 (2021-06-23)

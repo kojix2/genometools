@@ -22,12 +22,13 @@ ifeq ($(shell pkg-config --version > /dev/null 2> /dev/null; echo $$?),0)
   HAS_PKGCONFIG:=yes
   # Fix for Mac OS X manual building with Homebrew
   OLD_PKG_CONFIG_PATH:=$(PKG_CONFIG_PATH)
-  OVERRIDE_PC_PATH:=PKG_CONFIG_PATH=$(OLD_PKG_CONFIG_PATH):/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig
+  OVERRIDE_PC_PATH:=PKG_CONFIG_PATH=$(OLD_PKG_CONFIG_PATH):/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig
 else
   HAS_PKGCONFIG:=no
 endif
 
 # add necessary shared lib dependencies instead of building them ourselves
+ZLIB_DIR:=src/external/zlib-1.3.0.1
 ifeq ($(useshared),yes)
   ifeq ($(HAS_PKGCONFIG),yes)
     DEPLIBS:=-lbz2 \
@@ -57,7 +58,7 @@ ifeq ($(useshared),yes)
   endif
 else
   DEPLIBS:=
-  INCLUDEOPT+=-I$(CURDIR)/src/external/zlib-1.2.8 \
+  INCLUDEOPT+=-I$(CURDIR)/${ZLIB_DIR} \
               -I$(CURDIR)/src/external/md5-1.2/src \
               -I$(CURDIR)/src/external/lua-5.1.5/src \
               -I$(CURDIR)/src/external/luafilesystem-1.5.0/src \
@@ -115,7 +116,7 @@ BUILDSTAMP:=$(shell date +'"%Y-%m-%d %H:%M:%S"')
 
 # try to set RANLIB automatically
 SYSTEM?=$(shell uname -s)
-MACHINE:=$(shell uname -m)
+MACHINE?=$(shell uname -m)
 ifeq ($(SYSTEM),Darwin)
   RANLIB:=ranlib
   NO_STATIC_LINKING:=defined
@@ -194,7 +195,6 @@ SQLITE3_SRC:=$(SQLITE3_DIR)/sqlite3.c
 SQLITE3_OBJ:=$(SQLITE3_SRC:%.c=obj/%.o)
 SQLITE3_DEP:=$(SQLITE3_SRC:%.c=obj/%.d)
 
-ZLIB_DIR:=src/external/zlib-1.2.8
 ZLIB_SRC:=$(ZLIB_DIR)/adler32.c $(ZLIB_DIR)/compress.c $(ZLIB_DIR)/crc32.c \
           $(ZLIB_DIR)/gzclose.c $(ZLIB_DIR)/gzlib.c $(ZLIB_DIR)/gzread.c \
           $(ZLIB_DIR)/gzwrite.c $(ZLIB_DIR)/uncompr.c $(ZLIB_DIR)/deflate.c \
@@ -230,7 +230,7 @@ EXP_LDLIBS += $(DEPLIBS)
 GTSHAREDLIB_LIBDEP += $(DEPLIBS)
 
 SERVER=satta@genometools.org
-WWWBASEDIR=/var/www/servers
+WWWBASEDIR=/var/www/
 
 # process arguments
 ifeq ($(assert),no)
@@ -372,8 +372,8 @@ endif
 
 ifeq ($(findstring clang,$(CC)),clang)
   # do not complain about unnecessary options
-  GT_CFLAGS += -Qunused-arguments -Wno-parentheses -Wno-unknown-warning-option
-  GT_CPPFLAGS += -Qunused-arguments -Wno-parentheses -Wno-unknown-warning-option
+  GT_CFLAGS += -Qunused-arguments -Wno-parentheses
+  GT_CPPFLAGS += -Qunused-arguments -Wno-parentheses
   # do not complain about indentation in 3rdparty code
   GT_CFLAGS += -Wno-misleading-indentation
 endif
@@ -523,12 +523,6 @@ ifneq ($(useshared),yes)
                         $(ZLIB_DEP)
 endif
 
-ifneq ($(with-sqlite),no)
-  ifneq ($(useshared),yes)
-    LIBGENOMETOOLS_OBJ += lib/libsqlite.a
-  endif
-endif
-
 ifeq ($(wrapmemcpy),yes)
   GT_LDFLAGS += -Wl,--wrap=memcpy
   LIBGENOMETOOLS_OBJ += obj/src/memcpy.o
@@ -537,7 +531,7 @@ endif
 
 GT_CFLAGS_NO_WERROR:=$(GT_CFLAGS) -w
 
-ifneq ($(errorcheck),no)
+ifeq ($(errorcheck),yes)
   GT_CFLAGS += -Werror
 endif
 
@@ -589,7 +583,7 @@ endif
 lib/libexpat.a: $(LIBEXPAT_OBJ)
 	$(V_ECHO) "[link $(@F)]"
 	$(V_DO)test -d $(@D) || mkdir -p $(@D)
-	$(V_DO)$(AR) ru $@ $(LIBEXPAT_OBJ)
+	$(V_DO)$(AR) q $@ $(LIBEXPAT_OBJ)
 ifdef RANLIB
 	$(V_DO)$(RANLIB) $@
 endif
@@ -597,7 +591,7 @@ endif
 lib/libtre.a: $(LIBTRE_OBJ)
 	$(V_ECHO) "[link $(@F)]"
 	$(V_DO)test -d $(@D) || mkdir -p $(@D)
-	$(V_DO)$(AR) ru $@ $(LIBTRE_OBJ)
+	$(V_DO)$(AR) q $@ $(LIBTRE_OBJ)
 ifdef RANLIB
 	$(V_DO)$(RANLIB) $@
 endif
@@ -605,7 +599,7 @@ endif
 lib/libsqlite.a: $(SQLITE3_OBJ)
 	$(V_ECHO) "[link $(@F)]"
 	$(V_DO)test -d $(@D) || mkdir -p $(@D)
-	$(V_DO)$(AR) ru $@ $(SQLITE3_OBJ)
+	$(V_DO)$(AR) q $@ $(SQLITE3_OBJ)
 ifdef RANLIB
 	$(V_DO)$(RANLIB) $@
 endif
@@ -613,7 +607,7 @@ endif
 lib/libbz2.a: $(LIBBZ2_OBJ)
 	$(V_ECHO) "[link $(@F)]"
 	$(V_DO)test -d $(@D) || mkdir -p $(@D)
-	$(V_DO)$(AR) ru $@ $(LIBBZ2_OBJ)
+	$(V_DO)$(AR) q $@ $(LIBBZ2_OBJ)
 ifdef RANLIB
 	$(V_DO)$(RANLIB) $@
 endif
@@ -621,7 +615,7 @@ endif
 lib/libz.a: $(ZLIB_OBJ)
 	$(V_ECHO) "[link $(@F)]"
 	$(V_DO)test -d $(@D) || mkdir -p $(@D)
-	$(V_DO)$(AR) ru $@ $(ZLIB_OBJ)
+	$(V_DO)$(AR) q $@ $(ZLIB_OBJ)
 ifdef RANLIB
 	$(V_DO)$(RANLIB) $@
 endif
@@ -644,6 +638,7 @@ lib/libgenometools$(SHARED_OBJ_NAME_EXT): obj/gt_config.h \
                                           $(LIBGENOMETOOLS_OBJ) \
                                           $(ADDITIONAL_SO_DEPS) \
                                           $(ADDITIONAL_ZLIBS) \
+                                          $(OVERRIDELIBS) \
                                           $(VERSION_SCRIPT)
 	$(V_ECHO) "[link $(@F)]"
 	$(V_DO)test -d $(@D) || mkdir -p $(@D)
@@ -652,7 +647,7 @@ lib/libgenometools$(SHARED_OBJ_NAME_EXT): obj/gt_config.h \
 	  -o $@ $(GTSHAREDLIB_LIBDEP)
 
 define PROGRAM_template
-$(1): $(2)
+$(1): $(2) $(OVERRIDELIBS)
 	$(V_ECHO) "[link $$(@F)]"
 	$(V_DO)test -d $$(@D) || mkdir -p $$(@D)
 	$(V_DO)$$(CC) $$(EXP_LDFLAGS) $$(GT_LDFLAGS) $$(filter-out $$(OVERRIDELIBS),$$^) \
@@ -666,7 +661,7 @@ $(eval $(call PROGRAM_template, bin/gt, $(GTMAIN_OBJ) $(TOOLS_OBJ) \
 
 $(eval $(call PROGRAM_template, bin/examples/custom_stream, \
                                 obj/src/examples/custom_stream.o \
-                                lib/libgenometools.a\
+                                lib/libgenometools.a \
                                 $(ADDITIONAL_ZLIBS)))
 
 $(eval $(call PROGRAM_template, bin/examples/gff3sort, \
@@ -901,7 +896,7 @@ endif
 	$(V_DO)cp $(CURDIR)/LICENSE $(GTDISTDIR)
 	$(V_DO)cp $(CURDIR)/CONTRIBUTORS $(GTDISTDIR)
 	$(V_DO)cp $(CURDIR)/CHANGELOG $(GTDISTDIR)
-	$(V_DO)cp $(CURDIR)/doc/manuals/*.pdf $(GTDISTDIR)/doc
+	$(V_DO)cp $(CURDIR)/doc/manuals/*.pdf $(GTDISTDIR)/doc || true
 	$(V_DO)cp -r $(CURDIR)/gtdata $(GTDISTDIR)
 	$(V_DO)cp -r $(CURDIR)/gtpython $(GTDISTDIR)
 	$(V_DO)cp -r $(CURDIR)/gtruby $(GTDISTDIR)
@@ -990,7 +985,7 @@ gt: bin/gt
 install: all
 	test -d $(prefix)/bin || mkdir -p $(prefix)/bin
 ifeq ($(SYSTEM),Windows)
-	cp bin/gt $(prefix)/bin/gt.exe
+	cp bin/gt.exe $(prefix)/bin/gt.exe
 	$(STRIP) $(prefix)/bin/gt.exe
 else
 	cp bin/gt $(prefix)/bin
